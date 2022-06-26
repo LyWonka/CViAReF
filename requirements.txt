@@ -1,7 +1,12 @@
 opencv-python
+numpy
 matplotlib
 plotly
-scipy
-scikit-image
+os-sys
+time
+skimage
+ctypes
 screeninfo
-easy-tictoc
+scipy
+multiprocessing
+
