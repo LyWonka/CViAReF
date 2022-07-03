@@ -1,6 +1,4 @@
 import numpy as np
-import sys
-import cv2
 from skimage.color import *
 
 # small number
@@ -9,7 +7,6 @@ eps = 1e-13
 # since numpy uses round half to even (https://en.wikipedia.org/wiki/Rounding#Round_half_to_even) this function is used instead
 def roundd(x):
     return (np.floor(x+0.5)).astype('int')
-
 
 #######################################################################################
 #                           Geometrical Transformation                                #
@@ -36,7 +33,6 @@ def roundd(x):
 #       transformed image                                                             #
 #       displacement-vector                                                           #
 #######################################################################################
-
 
 def geoTransformation(img, matrix, method='nn'):
     data_type = img.dtype
@@ -72,7 +68,6 @@ def geoTransformation(img, matrix, method='nn'):
         # get row index i and column index j of upper left corner
         i = np.floor(x).astype('int')
         j = np.floor(y).astype('int')
-
 
         # get image values from all four neighbours
         I_0 = img[i,j]
@@ -121,7 +116,6 @@ def geoTransformation(img, matrix, method='nn'):
 
     ###################################
     # start interpolating gray values #
-    ###################################
 
     # row- and column indices in new image as arrays
     r_new_idx = np.arange(height_t).astype('int')

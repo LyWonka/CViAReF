@@ -9,7 +9,7 @@ class GUI():
 
     def __init__(self):
 
-        # Set Tkinter Window
+        # Set Tkinter Window  
         self.fenster = Tk()
         self.fenster.title("Summenfeld berechnung")
         self.fenster.configure(background='#49A')
@@ -52,16 +52,16 @@ class GUI():
         self.exit_button = Button(self.fenster, text="Beenden", command=self.exit)
 
         # Set Checkbutton
-        self.live_label = Label(self.fenster, text= "Live oder Snapshot?")
+        self.live_label = Label(self.fenster, text= "Soll ein Live Bild aufgenommen werden?")
         self.live_button = Checkbutton(self.fenster, text="live", variable=self.live)
         self.do_homography_label = Label(self.fenster, text= "Soll die Homografie angewandt werden?")
-        self.do_homography = Checkbutton(self.fenster, text="no nohomo", variable=self.homography)
+        self.do_homography = Checkbutton(self.fenster, text="Homografie anwenden", variable=self.homography)
         self.kalibrierung_label = Label(self.fenster, text= "Führe Kalibrierung aus")
         self.kalibrierung = Button(text='Kalibriere', command=self.calibrate)
         self.path_to_non_live_img_label = Label(self.fenster, text= "Bild auswählen")
-        self.path_to_non_live_img_button = Button(text='Choose File', command=self.callback)
+        self.path_to_non_live_img_button = Button(text='Datei auswählen (png oder jpg)', command=self.callback)
         #TODO Überschrift für Berechnung
-        self.vectorised_button = Checkbutton(self.fenster, text="Summenfeldberechnung Vektorisierung", variable=self.vectorised)
+        self.vectorised_button = Checkbutton(self.fenster, text="Summenfeldberechnung mit Vektorisierung", variable=self.vectorised)
         self.contours_button = Checkbutton(self.fenster, text="Summenfeld der Konturen", variable=self.contours)
         self.snapshot_button = Button(text='Snapshot', command=self.snapshot)
         self.start_button = Button(text='Start', command=self.start)
@@ -90,7 +90,8 @@ class GUI():
         # Label
         self.calibrate_label = Label(self.fenster, text= "Kalibrierung")
         self.main_label = Label(self.fenster, text= "Main")
-        self.design_label = Label(self.fenster, text= "Darstellung")
+        self.design_label = Label(self.fenster, text= "Darstellung der Feldlinien anpassen:")
+        self.homografie_label = Label(self.fenster, text= "Homografie Parameter anpassen:")
 
 
         # Label und Buttons erstellen.
@@ -108,10 +109,18 @@ class GUI():
         self.kamera_entry.grid(row=row, column=1)
 
         row +=1
+        self.monitor_label.grid(row=row, column=0)
+        self.monitor_entry.grid(row=row, column=1)
+
+        row +=1
         self.do_homography_label.grid(row=row, column=0)
         self.do_homography.grid(row=row, column=1)
 
         row +=1
+        self.homografie_label.grid(row = row, column=0)
+
+        row +=1
+        #anpassung bei Homografie
         self.threshold_label.grid(row=row, column=0)
         self.threshold_entry.grid(row=row, column=1)
     
@@ -122,10 +131,6 @@ class GUI():
         row +=1
         self.minLineLength_label.grid(row=row, column=0)
         self.minLineLength_entry.grid(row=row, column=1)
-
-        row +=1
-        self.monitor_label.grid(row=row, column=0)
-        self.monitor_entry.grid(row=row, column=1)
 
         row +=1
         #self.kalibrierung_label.grid(row=row, column=0)
@@ -172,20 +177,18 @@ class GUI():
         self.path_to_non_live_img.set(askopenfilename())
 
     def calibrate(self):
-        self.centers, self.H, self.window_name, self.beamer_img = calibrate(self.live.get(), self.homography.get(), self.path_to_non_live_img.get(), int(self.monitor.get()), int(self.kamera.get()), int(self.threshold.get()), int(self.maxLineGap.get()),int(self.minLineLength.get()))
+        self.centers, self.H, self.window_name, self.beamer_img = calibrate(self.live.get(), self.homography.get(), self.path_to_non_live_img.get(), int(self.monitor.get()), int(self.threshold.get()), int(self.maxLineGap.get()),int(self.minLineLength.get()))
 
     def snapshot(self):
         if self.beamer_img is not None:
-            self.beamer_img = main(centers=self.centers, H=self.H, window_name=self.window_name, beamer_img=self.beamer_img, processes=int(self.processes.get()), live=self.live.get(), do_homography=self.homography.get(), camera=int(self.kamera.get()), do_vectorized=self.vectorised.get(), contours=self.contours.get(), path_to_non_live_img=self.path_to_non_live_img.get(), density=float(self.density.get()), linewidth=float(self.linewidth.get()), charge_circle_radius=float(self.charge_circle_radius.get()))
-        else:
-            print("Please do calibration first!") 
+            main(centers=self.centers, H=self.H, window_name=self.window_name, beamer_img=self.beamer_img, processes=int(self.processes.get()), live=self.live.get(), do_homography=self.homography.get(), do_vectorized=self.vectorised.get(), contours=self.contours.get(), path_to_non_live_img=self.path_to_non_live_img.get(), density=float(self.density.get()), linewidth=float(self.linewidth.get()), charge_circle_radius=float(self.charge_circle_radius.get()))
+        print("Please do calibration first!")
 
     def start(self):
         if self.beamer_img is not None:
-            self.beamer_img = main(centers=self.centers, H=self.H, window_name=self.window_name, beamer_img=self.beamer_img, processes=int(self.processes.get()), live=self.live.get(), do_homography=self.homography.get(), camera=int(self.kamera.get()), do_vectorized=self.vectorised.get(), contours=self.contours.get(), path_to_non_live_img=self.path_to_non_live_img.get())
-            self.fenster.after(1000, self.start) # Alles läuft im Loop lupdiloop hula hoop
-        else:
-            print("Please do calibration first!")
+            self.beamer_img = main(centers=self.centers, H=self.H, window_name=self.window_name, beamer_img=self.beamer_img, processes=int(self.processes.get()), live=self.live.get(), do_homography=self.homography.get(), do_vectorized=self.vectorised.get(), contours=self.contours.get(), path_to_non_live_img=self.path_to_non_live_img.get())
+            self.fenster.after(1000, self.start)
+        print("Please do calibration first!")
 
     def exit(self):
         cv2.destroyAllWindows()

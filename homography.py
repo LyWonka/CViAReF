@@ -1,23 +1,20 @@
 import cv2
 import numpy as np
 from numpy.linalg import svd
-#from numpy.linalg import matmul
 import matplotlib.pyplot as plt
 import plotly.offline as py
-import sys
 from scipy.integrate import ode as ode
 from matplotlib.patches import Circle
 from numpy.linalg import svd
-import time
 import GeoTransformation as geoTrans
-import screeninfo
+
 
 plt.rcParams["figure.figsize"] = [7.00, 3.50]           #damit werden die Plots Vollbild
 plt.rcParams["figure.autolayout"] = True
 plt.rcParams['toolbar'] = 'None'
 
 
-def find_intersection(line1, line2):                    #die defs sind alles Hough
+def find_intersection(line1, line2):                   
     # extract points
     x1, y1, x2, y2 = line1[0]
     x3, y3, x4, y4 = line2[0]
@@ -60,8 +57,8 @@ def change_res(Kamera, width, height):
     Kamera.set(3, width)
     Kamera.set(4, height)
 
-def makeHomography(outfolder, path_to_non_live_img, live=True, camera=0, threshold=50, maxLineGap=100, minLineLength=200):
-    plt.figure(facecolor='blue')                           #hier wird ein schwarzes Bild geplottet, für die Hough, damit kein Regenbogeneffekt entsteht
+def makeHomography(outfolder, path_to_non_live_img, live=True, threshold=50, maxLineGap=100, minLineLength=200):
+    plt.figure(facecolor='blue')                           #hier wird ein blaues Bild geplottet, für die Hough, damit kein Regenbogeneffekt entsteht
     fig = plt.scatter([1], [1], c='blue', s=1)
     plt.axis('off')
     plt.xlim(0, 1080)
@@ -70,9 +67,9 @@ def makeHomography(outfolder, path_to_non_live_img, live=True, camera=0, thresho
     vollbild1.full_screen_toggle()
     plt.pause(.5)
 
-    Kamera = cv2.VideoCapture(camera)                            #das ist ein live-Bild das auf Knopfdruck das zu verarbeitende Bild liefert
+    Kamera = cv2.VideoCapture(1)                            #das ist ein live-Bild das auf Knopfdruck das zu verarbeitende Bild liefert
     #make_1080p()
-    if live:                                         #weil meine Kamera eine Art "Aufwachzeit hat" ist das notwendig bei mir
+    if live:                                        
         while True:
             isTrue, img = Kamera.read()
             cv2.imshow('Video',img)
@@ -175,7 +172,6 @@ def makeHomography(outfolder, path_to_non_live_img, live=True, camera=0, thresho
     cv2.waitKey()
 
     plt.close("all")
-    #
 
     height = crop_img.shape[0]
     width = crop_img.shape[1]
@@ -189,7 +185,7 @@ def makeHomography(outfolder, path_to_non_live_img, live=True, camera=0, thresho
     height1 = height-100
 
     x = [100, height1, 100, height1]                               #hier mit den Bildgrenzen vom gecroppten Bild.
-    y = [100, 100, width1, width1]                            #das sind die Koordinaten der Referenzpunkte
+    y = [100, 100, width1, width1]                            #das sind die  gespeichert.
 
     print("x:", x)
     print("y", y)
@@ -210,7 +206,7 @@ def makeHomography(outfolder, path_to_non_live_img, live=True, camera=0, thresho
         vollbild.full_screen_toggle()
         plt.pause(.5)
         #plt.waitforbuttonpress(0)
-        Kamera = cv2.VideoCapture(camera)                    # Kamera aktivieren (Kameraobjekt erstellen)
+        Kamera = cv2.VideoCapture(1)                    # Kamera aktivieren (Kameraobjekt erstellen)
         #make_1080p()                                #Der Index kann auch -1, oder 1 sein, je nachdem welche Kamera sie verwenden
         if (Kamera.isOpened()== False):                 # prüfen ob die Kamera geöffnet ist
             print("Fehler")
@@ -254,12 +250,12 @@ def makeHomography(outfolder, path_to_non_live_img, live=True, camera=0, thresho
         i += 1
     i=0
     #print(PB)
-    PB = np.asarray(PB, dtype = int)                                                     #das hats für mich vereinfacht die Koordinatenpaare zu finden
+    PB = np.asarray(PB, dtype = int)                                                     
                                                                         #xk und yk sind hier die von der Kamera aufgenommenen Punkte
-    ub1 = xk1 = PB[0,0]                                                           #Hier könnte der Fehler liegen. Siehe Tewes: DLT und mehr.
-    ub2 = xk2 = PB[1,0]                                                           #ich bin mir nicht sicher ob die Kamera v´ und u´ ist, oder der Beamer. Also was wird hier als Ausgang und was als Eingang angenommen?
-    ub3 = xk3 = PB[2,0]                                                           #auch nicht sicher ob x und y richtig sind oder vertauscht werden müssen?!
-    ub4 = xk4 = PB[3,0]                                                           # ist das falsch, dann müssen entweder die koordinaten oder die Matrix verändert werden
+    ub1 = xk1 = PB[0,0]                                                           
+    ub2 = xk2 = PB[1,0]                                                           
+    ub3 = xk3 = PB[2,0]                                                           
+    ub4 = xk4 = PB[3,0]                                                           
     #print("ub: ", ub1,ub2,ub3,ub4)
     vb1 = yk1 = PB[0,1]
     vb2 = yk2 = PB[1,1]
@@ -279,8 +275,7 @@ def makeHomography(outfolder, path_to_non_live_img, live=True, camera=0, thresho
 
     np.save("Data\PB", PB)
 
-    #hier wird die matrix als Array nach Tewes erstellt
-    #und hier ist halt die frage was ist was. Also ist Beamer oder kamera der Ausgang (u und v) oder ist Kamera das worauf es angewendet wird (u´und v´)
+    #hier wird die matrix als Array nach Tewes erstellt 
     A = np.array([[0,            0,      0,     u1,        v1,          1,       -u1*vb1,  -v1*vb1,     -vb1],
                 [-u1,        -v1,     -1,     0,          0,          0,        u1*ub1,   v1*ub1,      ub1],
                 [0,            0,      0,     u2,        v2,          1,       -u2*vb2,  -v2*vb2,     -vb2],
@@ -307,79 +302,3 @@ if __name__ == "__main__":
     makeHomography("Data/") # Fuer aufruf mit Kamera
     #makeHomography("Data/", False)
 
-###########################################################################
-#Hier ist das nicht-Tewes-Ding
-
-# plt.figure(facecolor='black')                   #plottet am Anfang ein schwarzes Bild, um Regenbogeneffekt vom Beamer zu eliminieren !wichtig!
-# fig = plt.scatter([1], [1], c='black', s=1)
-# plt.axis('off')
-# plt.xlim(0, 1080)
-# plt.ylim(0, 1920)
-# vollbild1 = plt.get_current_fig_manager()
-# vollbild1.full_screen_toggle()
-# plt.pause(1)
-#
-#
-# Kamera = cv2.VideoCapture(camera)
-# make_1080p()
-# while True:
-#     isTrue, img_test = Kamera.read()
-#     cv2.imshow('Video',img_test)
-#     if cv2.waitKey(20) & 0xFF==ord('d'):
-#         break
-# cv2.imshow("test",img_test)
-# cv2.waitKey()
-# Kamera.release()
-# cv2.destroyAllWindows()
-# img2 = np.copy(img)
-#
-# crop_img = img_test[yc1:yc2, xc1:xc2]
-#
-# x = [100, width1, 100, width1]                               #hier mit den Bildgrenzen vom gecroppten Bild.
-# y = [100, 100, height1, height1]
-#
-# screen = screeninfo.get_monitors()[0]
-# width, height = screen.width, screen.height
-# pts_src = np.array([[100,100],[100,width1],[height1,100],[height1,width1]])
-# pts_dst = np.array([[u1,v1],[u2,v2],[u3,v3],[u4,v4]])
-# h, status = cv2.findHomography(pts_src, pts_dst)
-# im_out = cv2.warpPerspective(img_test, h, (width,height))
-#
-#
-#
-# window_name = 'projector'
-# cv2.namedWindow(window_name, cv2.WND_PROP_FULLSCREEN)
-# cv2.moveWindow(window_name, screen.x - 1, screen.y - 1)
-# cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN,
-#                           cv2.WINDOW_FULLSCREEN)
-# cv2.imshow(window_name, im_out)
-# cv2.imshow("fertsch", im_out)
-# cv2.waitKey()
-############################################################################################################################################
-#Am Ende soll das Programm die koordinaten fürs Croppen erzeugen und diese und die Matrix H speichern (np.save())
-#Diese können dann im Hauptprogramm eingelesen werden (np.load())
-
-#Dazu werden nacheinander die Koordinaten vom Beamer ausgegeben durch die while Schleife.
-#Diese werden von der Kamera aufgenommen und durch "centroid" wird der Mittelpunkt der einzelnen Punkte bestimmt
-#diese Punkte werden dann in der Liste PB gespeichert (Zeile 228)
-#aus diesen mittelpunkten und den Koordinaten an denen der Beamer die Punkte projiziert wird die Matrix erstellt
-
-#Also das Programm hier soll ohne das andere ablaufen aus mehreren Gründen:
-#1. Das ist dann allgemein anwendbar und ist unabhängig von der Fragestellung der Arbeit
-#2. Ist das hier durchgelaufen und der Aufbau ändert sich nicht, dann muss das hier nichtmehr beachtet werden
-#3. außerdem kann nachdem das hier fertig ist, schon aufs whiteboard gezichnet werden (sonst machen die gezeichneten Punkte hier Probleme)
-#4. Es ist somit ein klarer Cut zwischen den Programmen
-
-#Probleme:
-#liest man die Cropp-Koordinaten und die Matrix H im Hauptprogramm ein, dann
-#geht bei der Homographie um Hauptprogramm irgendwas schief. das Croppen geht aber einwandfrei
-#die Meldung ist: out of bounds
-#Also da läuft irgendwas mit den Bildgrenzen falsch
-#ich denke es liegt an den in diesem programm festgelegten Koordinaten (Zeile 236 bis 254) und die daraus entstehende matrix
-#Ich seh allerdings den Fehler nicht und habe auch schon xb und yb sowie yk und xk durchgetauscht, ohne erfolg.
-#Ich habe den Porgrammvorschlag mit Implementierung auch ausprobiert, was am Ende den selben Fehler erzeugt.
-#aus diesem Grund denke ich, dass die Koordinaten und die daraus folgende Matrix falsch ist
-
-#wenn es nicht die matrix ist, dann kann es daran liegen, dass die Kamera die Koordinaten von unten links andängt
-#aber matplotlib von oben links
-#ich hab die die grenzen von y in der Schleife umgedreht um das zu lösen, kann aber sein, dass das nicht so geht

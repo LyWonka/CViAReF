@@ -1,9 +1,8 @@
-import cv2 # Zur
-import numpy as np # Vectorizierung,
+import cv2 
+import numpy as np  
 import matplotlib.pyplot as plt
 import time
 import screeninfo
-import numpy as np
 from scipy.integrate import ode as ode
 from matplotlib.patches import Circle
 from numpy.linalg import inv
@@ -21,6 +20,7 @@ plt.rcParams["figure.autolayout"] = True
 plt.rcParams['toolbar'] = 'None'
 
 # Nur für die Summenfeld Funktion ohne Vektorisierung
+# Quelle: https://scipython.com/blog/visualizing-a-vector-field-with-matplotlib/
 def E(q, q_x, q_y, x, y):
     if (q_x==x and q_y==y):
         return 0,0 # ansonsten bekommen wir Probleme mit einer Division durch Null
@@ -90,7 +90,7 @@ def Summenfeld_c(nrows, ncols, charge_grid, x_coords, y_coords):
     """
     Python Funktion die die Summenfeld Berechnung in eine C Funktion auslagert
     """
-    fun = ctypes.CDLL("C\summenfeld.so")
+    fun = ctypes.CDLL("D:\Bachelorarbeit\summenfeld.so")
     fun.Summenfeld.argtypes = [POINTER(c_float), POINTER(c_float), POINTER(c_float), POINTER(c_float), POINTER(c_float),c_size_t, c_size_t, c_size_t, c_size_t]
     fun.Summenfeld.restype = None
 
@@ -98,6 +98,9 @@ def Summenfeld_c(nrows, ncols, charge_grid, x_coords, y_coords):
     charges = charge_grid.astype(ctypes.c_float)
     x_coords = x_coords.astype(ctypes.c_float)
     y_coords = y_coords.astype(ctypes.c_float)
+
+    print("x_coords vorher")
+    print(x_coords)
 
     # diese werden im C-Programm gefüllt
     E_x = np.zeros(nrows*ncols, dtype=ctypes.c_float)
@@ -119,6 +122,12 @@ def Summenfeld_c(nrows, ncols, charge_grid, x_coords, y_coords):
 
     E_x = np.reshape(E_x, (nrows,ncols))
     E_y = np.reshape(E_y, (nrows,ncols))
+
+    print("x_coords nachher")
+    print(x_coords)
+
+    print("E_x")
+    print(E_x)
 
     return(E_x, E_y)
 
@@ -156,12 +165,10 @@ def get_contoures(img):
              charges.append([x,y])
     return(charges)
 
-def calibrate(live, do_homography, path_to_non_live_img, monitor, camera, threshold=50, maxLineGap=100, minLineLength=200):
-    # Anstelle die Homography seperat auszuführen, würde ich es abhängig von der Datei "centers.py" machen. ist diese vorhanden benutzte sie,
-    # wenn nicht berechne sie neu. (eventuell auch mit zusätzlichem Parameter eine neu berechnung erzwingen lassen)
+def calibrate(live, do_homography, path_to_non_live_img, monitor, threshold=50, maxLineGap=100, minLineLength=200):
     #if (os.path.exists("Data/centers.npy") and os.path.exists("Data/Matrix.npy")):
     if(do_homography):
-        Homography.makeHomography("Data/", path_to_non_live_img, live, camera, threshold, maxLineGap, minLineLength)
+        Homography.makeHomography("Data/", path_to_non_live_img, live, threshold, maxLineGap, minLineLength)
         centers = np.load("Data/centers.npy")
         H = np.load("Data/Matrix.npy")
     else:
@@ -181,14 +188,14 @@ def calibrate(live, do_homography, path_to_non_live_img, monitor, camera, thresh
 
     return(centers, H, window_name, black_img)
 
-def take_a_picture(window_name, live, camera, path_to_non_live_img):
+def take_a_picture(window_name, live, path_to_non_live_img):
     #plottet am Anfang ein schwarzes Bild, um Regenbogeneffekt vom Beamer zu eliminieren !wichtig!
     black_img = cv2.imread("Pictures/black.png")
     cv2.imshow(window_name, black_img)
     cv2.waitKey(2)
 
     if(live):
-        Kamera = cv2.VideoCapture(camera)
+        Kamera = cv2.VideoCapture(0)
         _, img = Kamera.read()
         Kamera.release()
     else:
@@ -199,10 +206,10 @@ def take_a_picture(window_name, live, camera, path_to_non_live_img):
     return(img)
 
 
-def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homography=True, camera=0, do_vectorized=True, contours=False, path_to_non_live_img="Pictures/Ladungen_ohneBeamer.png", density=1, linewidth=1, charge_circle_radius=0.05):
+def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homography=True, do_vectorized=True, contours=False, path_to_non_live_img="Pictures/Ladungen_ohneBeamer.png", density=1, linewidth=1, charge_circle_radius=0.05):
 
     # Nehme neues Foto auf
-    img = take_a_picture(window_name, live, camera, path_to_non_live_img)
+    img = take_a_picture(window_name, live, path_to_non_live_img)
 
     # Da für die Aufnahme das Bild geschwärzt wird muss danach das beamer_img wieder ausgegeben werden
     cv2.imshow(window_name, beamer_img)
@@ -253,7 +260,7 @@ def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homogra
     img_red[np.where(maskr!=0)] = 0
 
     # cv2.waitKey(10)
-    # cv2.imwrite("Pictures/red.png", img_red)
+    cv2.imwrite("Pictures/red.png", img_red)
 
     # to save time use only contours
     if(contours):
@@ -272,7 +279,7 @@ def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homogra
     img_blue[np.where(maskb==0)] = 255
     img_blue[np.where(maskb!=0)] = 0
     # cv2.waitKey(10)
-    # cv2.imwrite('Pictures/blue.png', img_blue)
+    cv2.imwrite('Pictures/blue.png', img_blue)
     if(contours):
         charges = get_contoures(img_blue)
         for charge in charges:
@@ -282,8 +289,8 @@ def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homogra
 
     # berechnen der Feldlinien
     # Für ungerade Zahlen überprüfen, ob es keinen Fehler gibt
-    x_coords = np.linspace(0, nrows, nrows) # <-- Erzeuge ein array von Zahlen zwischen -2 und 2 mit insgesamt nx Elementen. Die 2 gibt hier eine Skalierung vor, die wir natürlich selber festlegen können. 1 Pixel = x m,cm,mm ???
-    y_coords = np.linspace(0, ncols, ncols) # <-- dito mit ny Elementen
+    x_coords = np.linspace(0, nrows, nrows) 
+    y_coords = np.linspace(0, ncols, ncols) 
 
     # Wir berechnen das elektrische (Summen-)Feld aller Ladungen an allen Stellen x und y
     charge_idx = np.argwhere(charge_grid !=0) # <-- array der (x,y)-Koordinaten an denen sich Ladungen befinden
@@ -306,9 +313,9 @@ def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homogra
         #with open("time_needed_summenfeld.txt","a") as out:
         #    out.write(time_needed + "\n")
 
-#    start = time.time()
-#    Ex, Ey = Summenfeld_c(nrows, ncols, charge_grid, x_coords, y_coords)
-#    print("Summenfeld_c " + str(time.time() - start))
+    # start = time.time()
+    # Ex, Ey = Summenfeld_c(nrows, ncols, charge_grid, x_coords, y_coords)
+    # print("Summenfeld_c " + str(time.time() - start))
 
     fig = plt.figure()
     fig.set_size_inches(3.8,2.3)
@@ -348,10 +355,10 @@ def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homogra
 
         PB = np.load("Data/PB.npy")
 
-        ub1 = xk1 = PB[0,0]                                                           #Hier könnte der Fehler liegen. Siehe Tewes: DLT und mehr.
-        ub2 = xk2 = PB[1,0]                                                           #ich bin mir nicht sicher ob die Kamera v´ und u´ ist, oder der Beamer. Also was wird hier als Ausgang und was als Eingang angenommen?
-        ub3 = xk3 = PB[2,0]                                                           #auch nicht sicher ob x und y richtig sind oder vertauscht werden müssen?!
-        ub4 = xk4 = PB[3,0]                                                           # ist das falsch, dann müssen entweder die koordinaten oder die Matrix verändert werden
+        ub1 = xk1 = PB[0,0]                                                           
+        ub2 = xk2 = PB[1,0]                                                           
+        ub3 = xk3 = PB[2,0]                                                           
+        ub4 = xk4 = PB[3,0]                                                           
 
         vb1 = yk1 = PB[0,1]
         vb2 = yk2 = PB[1,1]
@@ -376,6 +383,7 @@ def main(centers, H, window_name, beamer_img, processes=4, live=True, do_homogra
 
 
     cv2.imshow(window_name,beamer_img)
+    #cv2.imwrite("final",beamer_img)
     cv2.waitKey(2)
 
     return(beamer_img)
@@ -388,7 +396,6 @@ if __name__ == "__main__":
     live = False
     monitor = 0
     do_homography = False
-    camera = 0
     do_vectorized = True
     contours = False
     processes = 4
@@ -400,4 +407,4 @@ if __name__ == "__main__":
 
     centers, H, window_name, beamer_img = calibrate(live, do_homography, path_to_non_live_img, monitor, threshold, maxLineGap, minLineLength)
 
-    beamer_img = main(centers=centers, H=H, window_name=window_name, beamer_img=beamer_img, processes=processes, live=live, do_homography=do_homography, camera=camera, do_vectorized=do_vectorized, contours=contours, path_to_non_live_img=path_to_non_live_img, density=density, linewidth=linewidth, charge_circle_radius=charge_circle_radius)
+    beamer_img = main(centers=centers, H=H, window_name=window_name, beamer_img=beamer_img, processes=processes, live=live, do_homography=do_homography, do_vectorized=do_vectorized, contours=contours, path_to_non_live_img=path_to_non_live_img, density=density, linewidth=linewidth, charge_circle_radius=charge_circle_radius)
